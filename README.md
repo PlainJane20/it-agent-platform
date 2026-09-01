@@ -287,20 +287,12 @@ Contributions and design discussions are welcome. Review [CONTRIBUTING.md](CONTR
 opening a pull request. For security concerns, follow [SECURITY.md](SECURITY.md) instead of filing
 a public issue.
 
-## About the author
-
-**Navi Sohi** — Data Engineering · Analytics · IT Automation
-
-I build process-oriented data and automation solutions that turn complex operational work into
-clear, measurable, and maintainable systems. This project is a practical exploration of safe,
-auditable AI automation for IT organizations.
-
 ## Contact
 
-Questions, collaboration ideas, and project feedback are welcome.
+### [Navi Sohi](https://github.com/PlainJane20) | Data Analytics & Visualization
 
-[![GitHub](https://img.shields.io/badge/GitHub-@PlainJane20-181717?logo=github&logoColor=white)](https://github.com/PlainJane20)
-[![Portfolio](https://img.shields.io/badge/Portfolio-plainjane20.github.io-0A66C2?logo=googlechrome&logoColor=white)](https://plainjane20.github.io/)
+For additional projects and contact information, visit my
+[portfolio](https://plainjane20.github.io/) or [GitHub profile](https://github.com/PlainJane20).
 
 ## License
 

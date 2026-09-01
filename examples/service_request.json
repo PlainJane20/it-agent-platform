@@ -1,0 +1,11 @@
+{
+  "source": "service-desk",
+  "requester": "alex@example.com",
+  "title": "VPN unavailable for finance team",
+  "description": "Multiple users cannot access the VPN after the latest client update.",
+  "metadata": {
+    "department": "Finance",
+    "device": "FIN-MBP-042"
+  }
+}
+

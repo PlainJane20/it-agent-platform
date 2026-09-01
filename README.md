@@ -287,13 +287,26 @@ Contributions and design discussions are welcome. Review [CONTRIBUTING.md](CONTR
 opening a pull request. For security concerns, follow [SECURITY.md](SECURITY.md) instead of filing
 a public issue.
 
+---
+
 ## Contact
 
-### [Navi Sohi](https://github.com/PlainJane20) | Data Analytics & Visualization
+<div align="center">
 
-For additional projects and contact information, visit my
-[portfolio](https://plainjane20.github.io/) or [GitHub profile](https://github.com/PlainJane20).
+### Navi Sohi
+
+*Technical Program Manager & Automation Engineer*
+
+<a href="https://www.linkedin.com/in/navisohi/"><img src="https://img.shields.io/badge/LINKEDIN-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn" /></a>
+<a href="https://github.com/PlainJane20"><img src="https://img.shields.io/badge/GITHUB-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" /></a>
+<a href="mailto:nks.ai.dev@gmail.com"><img src="https://img.shields.io/badge/EMAIL-EA4335?style=for-the-badge&logo=gmail&logoColor=white" alt="Email" /></a>
+
+</div>
 
 ## License
 
-Distributed under the [MIT License](LICENSE).
+Copyright © 2026 Navi Sohi.
+
+This project is distributed under the [MIT License](LICENSE). Reuse is permitted under the
+license terms, provided the copyright and license notice are retained in copies or substantial
+portions of the software.

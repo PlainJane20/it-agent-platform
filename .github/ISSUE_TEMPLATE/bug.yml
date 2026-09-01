@@ -1,0 +1,47 @@
+name: Bug report
+description: Report a reproducible defect in the platform
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include credentials, employee data, or production identifiers."
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      placeholder: "1. Configure...\n2. Submit...\n3. Observe..."
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Analysis mode
+      options:
+        - deterministic
+        - openai
+        - unknown
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Python version, operating system, and commit SHA
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Data safety
+      options:
+        - label: I removed secrets, personal data, and production identifiers.
+          required: true
+

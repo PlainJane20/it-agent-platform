@@ -1,0 +1,37 @@
+name: Feature request
+description: Propose a workflow, specialist, connector, or platform improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Operational problem
+      description: What IT workflow or control gap should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the user-visible result, not only the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: systems
+    attributes:
+      label: Systems involved
+      description: List providers or data sources without including credentials or tenant details.
+  - type: textarea
+    id: approval
+    attributes:
+      label: Approval and risk considerations
+      description: Which actions create external, privileged, destructive, or high-risk effects?
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: Success measures
+      description: How should quality, safety, latency, or operator effort be measured?
+

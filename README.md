@@ -45,6 +45,18 @@ Operational automation needs more than a capable model. It also needs clear auth
 predictable action schemas, least-privilege integrations, idempotency, and evidence that explains
 who approved what. This repository demonstrates those controls as working application code.
 
+> **Why I built it:** this is a personal project, built to get real practice designing the
+> authority boundary in an automation system — the line between what a model is allowed to
+> propose and what is actually allowed to touch a ticket, an identity, or an endpoint. The
+> deterministic policy engine, the typed action taxonomy, the per-agent operation allowlist, and
+> the idempotency keys all exist for the same reason: "the model recommended it" and "the system
+> did it" have to stay two separately auditable steps, not one step described twice. That's the
+> competency a Staff/Principal IT-org TPM role actually tests for — not whether automation works
+> on the happy path, but whether you can point to the specific control that stops a model from
+> approving its own privileged or destructive action, and produce the audit trail that proves it.
+> The mock executor and offline deterministic mode are deliberate — this was practice on the
+> control design itself, before wiring it to anything with real blast radius.
+
 ## IT workflows this platform can grow into
 
 <table>
@@ -286,6 +298,16 @@ See [Operations](docs/OPERATIONS.md), [Architecture](docs/ARCHITECTURE.md), and 
 Contributions and design discussions are welcome. Review [CONTRIBUTING.md](CONTRIBUTING.md) before
 opening a pull request. For security concerns, follow [SECURITY.md](SECURITY.md) instead of filing
 a public issue.
+
+> **Related work in this portfolio:** [agent-control-tower](https://github.com/PlainJane20/agent-control-tower)
+> is the closest genuine overlap — both separate a model's proposal from an approval decision from
+> execution, behind an append-only audit trail. The difference is real, not cosmetic:
+> agent-control-tower is a generic governance wrapper retrofitted onto two already-running agents
+> (slack-daily-agent, exec-status-rollup) after the fact, while this repo builds that
+> propose/approve/execute boundary in from the start around one domain, with a typed action
+> taxonomy and per-agent operation allowlists specific to IT operations. Same underlying interest
+> in authority boundaries for automation, approached from opposite directions — retrofit versus
+> ground-up.
 
 ---
 

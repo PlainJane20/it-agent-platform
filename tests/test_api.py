@@ -53,3 +53,28 @@ def test_api_workflow_approval_and_audit(tmp_path: Path, monkeypatch):
         event_types = [event["event_type"] for event in audit.json()["events"]]
         assert "action_approved" in event_types
         assert "action_executed" in event_types
+
+
+def test_api_rejects_self_approval(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(
+        api_module,
+        "get_settings",
+        lambda: Settings(it_agent_db_path=tmp_path / "self-approve.db"),
+    )
+    with TestClient(api_module.app) as client:
+        workflow = client.post(
+            "/v1/workflows",
+            json={
+                "requester": "alex@example.com",
+                "title": "VPN unavailable",
+                "description": "VPN is down for the finance team",
+            },
+        ).json()
+        action = next(item for item in workflow["actions"] if item["status"] == "approval_required")
+        response = client.post(
+            f"/v1/actions/{action['id']}/approve",
+            headers={"X-Actor": "alex@example.com"},
+            json={"approver": "alex@example.com", "reason": "self"},
+        )
+        assert response.status_code == 403
+        assert "differ from the requester" in response.json()["detail"]

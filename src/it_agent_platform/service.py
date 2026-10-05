@@ -21,6 +21,14 @@ from .models import ActionStatus, ApprovalDecision, ProposedAction, WorkflowResu
 from .policy import ApprovalPolicy
 
 
+class SelfApprovalError(PermissionError):
+    """Raised when the person who requested an action tries to approve it."""
+
+
+def _same_person(a: str, b: str) -> bool:
+    return a.strip().casefold() == b.strip().casefold()
+
+
 class AutomationService:
     def __init__(self, settings: Settings, executor: Optional[ActionExecutor] = None) -> None:
         self.settings = settings
@@ -55,6 +63,8 @@ class AutomationService:
         action = self._get_action(action_id)
         if action.status != ActionStatus.APPROVAL_REQUIRED:
             raise ValueError(f"action cannot be approved from status {action.status}")
+        if action.requester and _same_person(action.requester, decision.approver):
+            raise SelfApprovalError("approver must differ from the requester of the action")
         action.status = ActionStatus.APPROVED
         self.audit.record(
             action.workflow_id,

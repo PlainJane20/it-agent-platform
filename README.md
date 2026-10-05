@@ -8,8 +8,8 @@
 
 ### Approval-first automation for modern IT operations
 
-Coordinate specialized agents, enforce human authorization, and preserve a complete audit trail
-before any operational action reaches an external system.
+Coordinate specialized agents, gate actions behind a human approval step, and record an audit trail
+(see [Known limitations](#known-limitations)) before any operational action reaches an external system.
 
 [![CI](https://github.com/PlainJane20/it-agent-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/PlainJane20/it-agent-platform/actions/workflows/ci.yml)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -23,9 +23,9 @@ before any operational action reaches an external system.
 
 <div align="center">
 
-| 6 specialist agents | 2 analysis modes | 4 protected action classes | 93% test coverage |
+| 6 specialist agents | 2 analysis modes | 4 protected action classes | 93% statement coverage |
 |:---:|:---:|:---:|:---:|
-| Triage → Compliance | Deterministic + OpenAI | External · Privileged · Destructive · High-risk | Policy · API · Audit · Model boundary |
+| Triage → Compliance | Deterministic + OpenAI | External · Privileged · Destructive · High-risk | Measured with pytest-cov; no branch coverage |
 
 </div>
 
@@ -43,17 +43,19 @@ The project runs safely without external credentials. Its default mock executor 
 
 Operational automation needs more than a capable model. It also needs clear authority boundaries,
 predictable action schemas, least-privilege integrations, idempotency, and evidence that explains
-who approved what. This repository demonstrates those controls as working application code.
+who approved what. This repository sketches those controls in a reference implementation; several
+are only partly implemented (see [Known limitations](#known-limitations)).
 
 > **Why I built it:** this is a personal project, built to get real practice designing the
 > authority boundary in an automation system — the line between what a model is allowed to
 > propose and what is actually allowed to touch a ticket, an identity, or an endpoint. The
 > deterministic policy engine, the typed action taxonomy, the per-agent operation allowlist, and
-> the idempotency keys all exist for the same reason: "the model recommended it" and "the system
+> the idempotency keys (generated, not yet enforced) all exist for the same reason: "the model recommended it" and "the system
 > did it" have to stay two separately auditable steps, not one step described twice. That's the
 > competency a Staff/Principal IT-org TPM role actually tests for — not whether automation works
 > on the happy path, but whether you can point to the specific control that stops a model from
-> approving its own privileged or destructive action, and produce the audit trail that proves it.
+> approving its own privileged or destructive action. (Here the model cannot call the approve endpoint,
+> but the API does not stop a human requester from approving their own request.)
 > The mock executor and offline deterministic mode are deliberate — this was practice on the
 > control design itself, before wiring it to anything with real blast radius.
 
@@ -97,8 +99,8 @@ who approved what. This repository demonstrates those controls as working applic
 | Multi-agent coordination | Deterministic routing with concurrent specialist analysis |
 | Analysis modes | Offline deterministic mode or OpenAI structured-output mode |
 | Human oversight | Mandatory approval for external, privileged, destructive, and high-risk work |
-| Action safety | Typed actions, per-agent operation allowlists, and idempotency keys |
-| Auditability | Workflow, policy, approval, and execution events stored in SQLite |
+| Action safety | Typed actions, per-agent operation allowlists, and generated (not enforced) idempotency keys |
+| Auditability | Workflow, policy, approval, and execution events stored in an ordinary SQLite table (not tamper-evident) |
 | Integration boundary | Connector interface with a no-side-effect mock executor by default |
 | Developer experience | FastAPI, interactive OpenAPI docs, Docker, Ruff, pytest, and GitHub Actions |
 
@@ -125,8 +127,10 @@ flowchart LR
     G --> I
 ```
 
-The model layer can recommend actions, but it cannot modify the policy engine, approve its own
-work, add connector operations, or execute against an external system.
+The model layer can recommend actions, but it cannot modify the policy engine, call the approval
+endpoint, add connector operations, or execute against an external system. Caveat: the policy
+reads the `kind` and `risk` labels the model supplies in OpenAI mode, so a mislabeled proposal
+can bypass the approval requirement (see Known limitations).
 
 ## Specialist agents
 
@@ -218,7 +222,7 @@ The default response contains `"mode": "mock"`, confirming that no external chan
 | Variable | Default | Description |
 |---|---|---|
 | `IT_AGENT_ANALYSIS_MODE` | `deterministic` | Selects `deterministic` or `openai` specialist analysis |
-| `IT_AGENT_EXECUTION_MODE` | `mock` | Reserved execution mode; the included executor remains mock-only |
+| `IT_AGENT_EXECUTION_MODE` | `mock` | Reserved and currently unused: the setting is parsed but never read; the executor is always the mock |
 | `IT_AGENT_DB_PATH` | `./it_agent_platform.db` | SQLite audit database location |
 | `OPENAI_MODEL` | `gpt-5.6-terra` | Model used by OpenAI-backed specialists |
 | `OPENAI_API_KEY` | unset | Required only when analysis mode is `openai` |
@@ -238,7 +242,7 @@ IT_AGENT_EXECUTION_MODE=mock
 
 The coordinator invokes selected specialists concurrently, and each response is parsed against a
 strict Pydantic schema. Application code then filters every proposal through that agent's allowed
-operations and the central approval policy.
+operations and the central approval policy, which trusts the model-supplied `kind` and `risk`.
 
 ## Project structure
 
@@ -267,13 +271,27 @@ make check
 The test suite covers routing, policy decisions, unauthorized execution, the approval lifecycle,
 HTTP behavior, audit events, mock execution, and enforcement of model operation allowlists.
 
+## Known limitations
+
+Verified by reading the code; this is a reference implementation, not a safe control plane.
+
+- **Self-approval is possible.** The API only checks that the `X-Actor` header equals the `approver` in the body. The requester is never recorded and there is no requester-differs-from-approver check, so whoever submits a request can approve it. `X-Actor` is an unauthenticated header.
+- **Policy trusts model-supplied labels.** `policy.py` decides purely from the action's `kind` and `risk`. In OpenAI mode those come from model output (`openai_agent.py`), so a model that labels a privileged or destructive action as a local draft with low risk gets it auto-approved. Per-agent operation allowlists limit which operations can appear, but not their labels.
+- **Approved actions are held in memory.** `AutomationService.actions` is a plain dict. Pending and approved actions are lost on restart (only audit events persist in SQLite).
+- **Audit log is not append-only or tamper-evident.** It is an ordinary SQLite table; rows can be updated or deleted by anyone with database access, and there is no hash chain.
+- **Approvals do not expire and are not bound to arguments.** An approval is a status flip; it has no TTL and is not tied to a hash of the action's operation and arguments.
+- **Idempotency keys are not enforced.** Keys are generated and passed to the executor, but nothing deduplicates on them. The only double-execution guard is the in-memory `executed` status, which is lost on restart.
+- **`IT_AGENT_EXECUTION_MODE=live` does nothing.** The setting is parsed in `config.py` but never read; there is no live executor.
+- **No budget or cost controls.** There is no token, spend, or rate limit on OpenAI-mode analysis.
+- **Coverage figure.** 93% is statement coverage (pytest-cov, reproduced); branch coverage is not measured.
+
 ## Production readiness
 
 This repository is a **reference implementation**, not a turnkey production control plane.
 Before connecting a real IT system:
 
 1. Replace `X-Actor` development headers with verified SSO/JWT identity.
-2. Move audit events to an append-only centralized store with retention controls.
+2. Move audit events from the ordinary SQLite table to an append-only centralized store with retention controls.
 3. Encrypt sensitive fields and complete a privacy/data-classification review.
 4. Implement one least-privilege connector against a non-production tenant.
 5. Add connector-side target validation, authorization, and idempotent retries.
@@ -301,7 +319,7 @@ a public issue.
 
 > **Related work in this portfolio:** [agent-control-tower](https://github.com/PlainJane20/agent-control-tower)
 > is the closest genuine overlap — both separate a model's proposal from an approval decision from
-> execution, behind an append-only audit trail. The difference is real, not cosmetic:
+> execution, behind an audit trail. The difference is real, not cosmetic:
 > agent-control-tower is a generic governance wrapper retrofitted onto two already-running agents
 > (slack-daily-agent, exec-status-rollup) after the fact, while this repo builds that
 > propose/approve/execute boundary in from the start around one domain, with a typed action

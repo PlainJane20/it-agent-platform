@@ -251,7 +251,7 @@ IT_AGENT_EXECUTION_MODE=mock
 
 The coordinator invokes selected specialists concurrently, and each response is parsed against a
 strict Pydantic schema. Application code then filters every proposal through that agent's allowed
-operations and the central approval policy, which trusts the model-supplied `kind` and `risk`.
+operations and the central approval policy, which starts from the model-supplied `kind` and `risk` and can only raise them to the operation floor.
 
 ## Project structure
 
@@ -284,7 +284,7 @@ HTTP behavior, audit events, mock execution, and enforcement of model operation 
 
 Verified by reading the code; this is a reference implementation, not a safe control plane.
 
-- **Approver identity is unauthenticated.** The API rejects approval when the `approver` matches the request's `requester` (case-insensitive), but `X-Actor` is a plain header, so this separation of duties is only as strong as the identity layer in front of it. There is no authentication, role check, or approver allowlist.
+- **Approver identity is unauthenticated.** The API rejects approval when the `approver` matches the request's `requester` (case-insensitive), but both `X-Actor` (a plain header that only has to equal `approver`) and the `requester` (a field the submitter writes in the request body) are self-asserted, so this separation of duties is only as strong as the identity layer in front of it. Anyone who can call the API can name any requester and approve under any other name. There is no authentication, role check, or approver allowlist.
 - **Operation floors are a static table.** `policy.py` raises the model's `kind`/`risk` to the minimum in `OPERATION_FLOORS` and requires approval for unknown operations, but the table is hand-maintained and covers operation names only, not arguments or targets (for example, which user an access review touches).
 - **Approved actions are held in memory.** `AutomationService.actions` is a plain dict. Pending and approved actions are lost on restart (only audit events persist in SQLite).
 - **Audit log is not append-only or tamper-evident.** It is an ordinary SQLite table; rows can be updated or deleted by anyone with database access, and there is no hash chain.
@@ -329,8 +329,9 @@ a public issue.
 > **Related work in this portfolio:** [agent-control-tower](https://github.com/PlainJane20/agent-control-tower)
 > is the closest genuine overlap — both separate a model's proposal from an approval decision from
 > execution, behind an audit trail. The difference is real, not cosmetic:
-> agent-control-tower is a generic governance wrapper retrofitted onto two already-running agents
-> (slack-daily-agent, exec-status-rollup) after the fact, while this repo builds that
+> agent-control-tower is a generic governance wrapper that two already-running agents
+> (slack-daily-agent, exec-status-rollup) can optionally import after the fact (they run
+> ungoverned without it), while this repo builds that
 > propose/approve/execute boundary in from the start around one domain, with a typed action
 > taxonomy and per-agent operation allowlists specific to IT operations. Same underlying interest
 > in authority boundaries for automation, approached from opposite directions — retrofit versus

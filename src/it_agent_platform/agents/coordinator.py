@@ -43,6 +43,7 @@ class Coordinator:
         )
         actions = [action for finding in findings for action in finding.actions]
         for action in actions:
+            action.requester = request.requester
             decision = self.policy.evaluate(action)
             action.status = decision.status
             self.audit.record(

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -61,6 +61,9 @@ class ProposedAction(BaseModel):
     risk: RiskLevel
     status: ActionStatus = ActionStatus.PROPOSED
     idempotency_key: str
+    # Who submitted the originating request; stamped by the coordinator. None for
+    # actions created before this field existed (no separation-of-duties check possible).
+    requester: Optional[str] = None
     created_at: datetime = Field(default_factory=utc_now)
 
 

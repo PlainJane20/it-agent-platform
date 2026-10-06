@@ -4,7 +4,7 @@ import pytest
 
 from it_agent_platform.config import Settings
 from it_agent_platform.models import ActionStatus, ApprovalDecision, WorkRequest
-from it_agent_platform.service import AutomationService
+from it_agent_platform.service import AutomationService, SelfApprovalError
 
 
 @pytest.fixture
@@ -50,3 +50,35 @@ async def test_approved_action_executes_in_mock_mode(service: AutomationService)
     execution = await service.execute(action.id, "lead@example.com")
     assert execution["mode"] == "mock"
     assert action.status == ActionStatus.EXECUTED
+
+
+@pytest.mark.asyncio
+async def test_requester_is_recorded_on_actions(service: AutomationService):
+    result = await service.submit(
+        WorkRequest(requester="u@example.com", title="VPN unavailable", description="VPN is down")
+    )
+    assert result.actions
+    assert all(item.requester == "u@example.com" for item in result.actions)
+
+
+@pytest.mark.asyncio
+async def test_requester_cannot_approve_own_action(service: AutomationService):
+    result = await service.submit(
+        WorkRequest(requester="u@example.com", title="VPN unavailable", description="VPN is down")
+    )
+    action = next(item for item in result.actions if item.status == "approval_required")
+    with pytest.raises(SelfApprovalError):
+        service.approve(action.id, ApprovalDecision(approver=" U@Example.com ", reason="me"))
+    assert action.status == ActionStatus.APPROVAL_REQUIRED
+
+
+@pytest.mark.asyncio
+async def test_different_approver_is_accepted(service: AutomationService):
+    result = await service.submit(
+        WorkRequest(requester="u@example.com", title="VPN unavailable", description="VPN is down")
+    )
+    action = next(item for item in result.actions if item.status == "approval_required")
+    approved = service.approve(
+        action.id, ApprovalDecision(approver="lead@example.com", reason="reviewed")
+    )
+    assert approved.status == ActionStatus.APPROVED

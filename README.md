@@ -55,7 +55,8 @@ are only partly implemented (see [Known limitations](#known-limitations)).
 > competency a Staff/Principal IT-org TPM role actually tests for — not whether automation works
 > on the happy path, but whether you can point to the specific control that stops a model from
 > approving its own privileged or destructive action. (Here the model cannot call the approve endpoint,
-> but the API does not stop a human requester from approving their own request.)
+> and the API rejects a requester approving their own request, though identity itself is an
+> unauthenticated header.)
 > The mock executor and offline deterministic mode are deliberate — this was practice on the
 > control design itself, before wiring it to anything with real blast radius.
 
@@ -128,9 +129,9 @@ flowchart LR
 ```
 
 The model layer can recommend actions, but it cannot modify the policy engine, call the approval
-endpoint, add connector operations, or execute against an external system. Caveat: the policy
-reads the `kind` and `risk` labels the model supplies in OpenAI mode, so a mislabeled proposal
-can bypass the approval requirement (see Known limitations).
+endpoint, add connector operations, or execute against an external system. The policy
+applies a per-operation minimum kind and risk on top of the model's labels, and unknown
+operations require approval (see Known limitations).
 
 ## Specialist agents
 
@@ -275,8 +276,8 @@ HTTP behavior, audit events, mock execution, and enforcement of model operation 
 
 Verified by reading the code; this is a reference implementation, not a safe control plane.
 
-- **Self-approval is possible.** The API only checks that the `X-Actor` header equals the `approver` in the body. The requester is never recorded and there is no requester-differs-from-approver check, so whoever submits a request can approve it. `X-Actor` is an unauthenticated header.
-- **Policy trusts model-supplied labels.** `policy.py` decides purely from the action's `kind` and `risk`. In OpenAI mode those come from model output (`openai_agent.py`), so a model that labels a privileged or destructive action as a local draft with low risk gets it auto-approved. Per-agent operation allowlists limit which operations can appear, but not their labels.
+- **Approver identity is unauthenticated.** The API rejects approval when the `approver` matches the request's `requester` (case-insensitive), but `X-Actor` is a plain header, so this separation of duties is only as strong as the identity layer in front of it. There is no authentication, role check, or approver allowlist.
+- **Operation floors are a static table.** `policy.py` raises the model's `kind`/`risk` to the minimum in `OPERATION_FLOORS` and requires approval for unknown operations, but the table is hand-maintained and covers operation names only, not arguments or targets (for example, which user an access review touches).
 - **Approved actions are held in memory.** `AutomationService.actions` is a plain dict. Pending and approved actions are lost on restart (only audit events persist in SQLite).
 - **Audit log is not append-only or tamper-evident.** It is an ordinary SQLite table; rows can be updated or deleted by anyone with database access, and there is no hash chain.
 - **Approvals do not expire and are not bound to arguments.** An approval is a status flip; it has no TTL and is not tied to a hash of the action's operation and arguments.

@@ -59,6 +59,8 @@ def approve_action(
         raise HTTPException(status.HTTP_403_FORBIDDEN, "actor must match approver")
     try:
         return service.approve(action_id, decision)
+    except PermissionError as error:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(error)) from error
     except (KeyError, ValueError) as error:
         raise HTTPException(status.HTTP_409_CONFLICT, str(error)) from error
 

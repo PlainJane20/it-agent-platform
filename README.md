@@ -39,6 +39,14 @@ require human approval.
 The project runs safely without external credentials. Its default mock executor records what
 *would* happen without changing a ticket, identity, endpoint, or production system.
 
+### Architecture pattern
+
+**Governance gate around specialist agents** (with a rule-based router and parallel specialists in front). `Coordinator.route` (`src/it_agent_platform/agents/coordinator.py`) picks specialists by keyword match, runs them concurrently with `asyncio.gather`, and passes every proposed action through `ApprovalPolicy.evaluate` (`policy.py`). `AutomationService` (`service.py`) then enforces `approve` and `execute` as separate, audited steps.
+
+- **Deterministic vs model-driven:** Routing, the policy table (`OPERATION_FLOORS`), the self-approval check, execution gating and the audit log are all deterministic. The specialists are rule-based by default. In `openai` mode the model proposes the actions (`openai_agent.py`), limited to an allow-list of operations per specialist, and the policy can raise the model's risk label but never lower it.
+- **Human gate:** Yes. External-write, privileged and destructive actions, high-risk actions and unknown operations need a different person to approve before `execute` will run them. Low-risk drafts and reads are auto-approved. The approver is an unauthenticated header, so the separation is only as strong as the identity layer in front of it (see Known limitations).
+- **Honest limit:** It governs actions that agents propose. It is not an autonomous loop or a planner: specialists do not call each other or react to results, and pending actions live in an in-memory dict (`service.actions`), so approvals do not survive a restart even though the audit log is stored.
+
 ### Why this project
 
 Operational automation needs more than a capable model. It also needs clear authority boundaries,

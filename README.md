@@ -23,7 +23,7 @@ Coordinate specialized agents, gate actions behind a human approval step, and re
 
 <div align="center">
 
-| 6 specialist agents | 2 analysis modes | 4 protected action classes | 93% statement coverage |
+| 6 specialist agents | 2 analysis modes | 4 protected action classes | 94% statement coverage |
 |:---:|:---:|:---:|:---:|
 | Triage → Compliance | Deterministic + OpenAI | External · Privileged · Destructive · High-risk | Measured with pytest-cov; no branch coverage |
 
@@ -292,7 +292,7 @@ Verified by reading the code; this is a reference implementation, not a safe con
 - **Idempotency keys are not enforced.** Keys are generated and passed to the executor, but nothing deduplicates on them. The only double-execution guard is the in-memory `executed` status, which is lost on restart.
 - **`IT_AGENT_EXECUTION_MODE=live` does nothing.** The setting is parsed in `config.py` but never read; there is no live executor.
 - **No budget or cost controls.** There is no token, spend, or rate limit on OpenAI-mode analysis.
-- **Coverage figure.** 93% is statement coverage (pytest-cov, reproduced); branch coverage is not measured.
+- **Coverage figure.** 94% is statement coverage (pytest-cov 363 of 387 statements, 24 missed; matches CI on Python 3.9 and 3.12; a newer coverage release on Python 3.14 counts 354 statements and prints 93%); branch coverage is not measured.
 
 ## Production readiness
 
